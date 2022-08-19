@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="GradleMigrationSettings" migrationVersion="1" />
+  <component name="GradleSettings">
+    <option name="linkedExternalProjectsSettings">
+      <GradleProjectSettings>
+        <option name="testRunner" value="GRADLE" />
+        <option name="distributionType" value="DEFAULT_WRAPPED" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/app" />
+            <option value="$PROJECT_DIR$/cryptota-android-4.8.2.24" />
+            <option value="$PROJECT_DIR$/cryptota-android-4.8.2.24-Debug" />
+            <option value="$PROJECT_DIR$/securefileio-android-4.8.1.15" />
+            <option value="$PROJECT_DIR$/securefileio-android-4.8.1.15-Debug" />
+            <option value="$PROJECT_DIR$/vos-app-protection-android-4.9.2" />
+            <option value="$PROJECT_DIR$/vos-app-protection-android-4.9.2.-Debug" />
+            <option value="$PROJECT_DIR$/vos-processor-android-4.9.1.1" />
+            <option value="$PROJECT_DIR$/vos-processor-android-4.9.1.1-Debug" />
+          </set>
+        </option>
+        <option name="resolveModulePerSourceSet" value="false" />
+      </GradleProjectSettings>
+    </option>
+  </component>
+</project>

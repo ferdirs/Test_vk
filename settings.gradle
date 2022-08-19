@@ -1,0 +1,20 @@
+    dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        jcenter() // Warning: this repository is going to shut down soon
+    }
+}
+include':vos-processor-android-4.9.1.1-Debug'
+include':vos-app-protection-android-4.9.2.-Debug'
+include':securefileio-android-4.8.1.15-Debug'
+include':cryptota-android-4.8.2.24-Debug'
+
+include':vos-processor-android-4.9.1.1'
+include':vos-app-protection-android-4.9.2'
+include':securefileio-android-4.8.1.15'
+include':cryptota-android-4.8.2.24'
+
+rootProject.name = "vkey_java_test"
+include ':app'
