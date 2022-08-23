@@ -27,9 +27,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Vkey_java_test"
         tools:replace="android:theme">
-        <activity
-            android:name=".VosProcessorAct"
-            android:exported="false" />
 
         <uses-library
             android:name="org.apache.http.legacy"

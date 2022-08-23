@@ -11,6 +11,7 @@ import vkey.android.vos.VosWrapper;
 
 
 import com.vkey.android.vguard.MemoryConfiguration;
+import com.vkey.android.vguard.VGException;
 import com.vkey.securefileio.SecureFileIO;
 import com.vkey.vos.signer.taInterface;
 
@@ -41,7 +42,7 @@ import java.nio.file.Files;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class MainActivity extends AppCompatActivity implements VGExceptionHandler {
+public class MainActivity extends AppCompatActivity implements VGExceptionHandler, VosWrapper.Callback {
 
     private VGuard vGuardMgr;
     private VGuardLifecycleHook hook;
@@ -61,10 +62,7 @@ public class MainActivity extends AppCompatActivity implements VGExceptionHandle
 
 
 
-        mVos = new Vos(this);
-        mVos.registerVosWrapperCallback((i, i1) ->{
-            return false;
-        });
+
 
         tv = findViewById(R.id.tv);
 //        mVos = new Vos(this);
@@ -78,9 +76,8 @@ public class MainActivity extends AppCompatActivity implements VGExceptionHandle
 //        iVosWrapper.setTrustedTimeServerUrl("https://domain.com/vtap/time");
 //        CryptoTA.unloadTA();
 //        iVosWrapper.stopVOS();
-
+//
         setupVguard();
-
         encryptDecrypt(this);
         tv.setText(vGuardMgr.getTroubleshootingId());
         encryptBlockDataFile(this);
@@ -194,10 +191,10 @@ public class MainActivity extends AppCompatActivity implements VGExceptionHandle
             public void onReceive(Context context, Intent intent) {
                 super.onReceive(context, intent);
                    if (PROFILE_LOADED.equals(intent.getAction())){}
-                    if (VGUARD_STATUS.equals(intent.getAction())){}
-                    if (ACTION_SCAN_COMPLETE.equals(intent.getAction())){
+                   if (VGUARD_STATUS.equals(intent.getAction())){}
+                   if (ACTION_SCAN_COMPLETE.equals(intent.getAction())){
                     }
-                    if (VOS_READY.equals(intent.getAction())){
+                   if (VOS_READY.equals(intent.getAction())){
                         Toast.makeText(MainActivity.this , "Done" , Toast.LENGTH_LONG).show();
                     }
             }
@@ -216,37 +213,42 @@ public class MainActivity extends AppCompatActivity implements VGExceptionHandle
             vGuardMgr= new VGuardFactory().getVGuard(this);
             vGuardMgr.setVGExceptionHandler(this);
             hook = new ActivityLifecycleHook(vGuardMgr);
+            Log.d("coba" , "jalan");
         } catch (Exception e) {
             e.printStackTrace();
+            Log.d("exxx" , "dd" + e);
         }
     }
     //    VKeySecureKeypad.VKSecureKeyboardLayout =
 
-    private void stopMvos(){
-        mVos.stop();
-    }
+//    private void stopMvos(){
+//        mVos.stop();
+//    }
 
     private void startVos(Context ctx){
-
+        mVos = new Vos(ctx);
+        mVos.registerVosWrapperCallback(this);
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    InputStream is = ctx.getAssets().open("kernel.bin");
+                    InputStream is = ctx.getAssets().open("firmware");
                     byte[] kernelData = new byte[is.available()];
                     is.read(kernelData);
                     is.close();
-                    long vosReturnCode = mVos.start(kernelData ,null , null , null , null);
+                    int vosReturnCode = (int) mVos.start(kernelData ,null , null , null , null);
+                    Log.d("testingg" , "berhasil");
                     if (vosReturnCode > 0){
                         //successfully start
                         VosWrapper vosWrapper = VosWrapper.getInstance(ctx);
                         String version = vosWrapper.getProcessorVersion();
+                        Log.d("testingg" , "berhasil");
                     }else {
                         //failed to start vos , handle error
-
+                        Log.d("failed", "run: gaal");
                     }
                 } catch (IOException e) {
-
+                    Log.d("yyy" , "gagal" + e);
                 }
 
             }
@@ -255,6 +257,10 @@ public class MainActivity extends AppCompatActivity implements VGExceptionHandle
     }
 
 
+    @Override
+    public boolean onNotified(int i, int i1) {
+        return false;
+    }
 }
 
 
