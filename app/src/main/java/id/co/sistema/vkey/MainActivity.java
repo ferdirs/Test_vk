@@ -16,6 +16,7 @@ import com.vkey.securefileio.SecureFileIO;
 import com.vkey.vos.signer.taInterface;
 
 import static id.co.sistema.vkey.Constant.PROFILE_LOADED;
+import static id.co.sistema.vkey.Constant.VOS_FIRMWARE_RETURN_CODE_KEY;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -42,7 +43,7 @@ import java.nio.file.Files;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class MainActivity extends AppCompatActivity implements VGExceptionHandler, VosWrapper.Callback {
+public class MainActivity extends AppCompatActivity  implements VGExceptionHandler, VosWrapper.Callback {
 
     private VGuard vGuardMgr;
     private VGuardLifecycleHook hook;
@@ -62,12 +63,10 @@ public class MainActivity extends AppCompatActivity implements VGExceptionHandle
 
 
 
-
-
         tv = findViewById(R.id.tv);
 //        mVos = new Vos(this);
 //        mVos.registerVosWrapperCallback((VosWrapper.Callback) this);
-        startVos(this);
+
 
 //        VosWrapper iVosWrapper = VosWrapper.getInstance(this);
 //        CryptoTA.loadTA();
@@ -76,16 +75,19 @@ public class MainActivity extends AppCompatActivity implements VGExceptionHandle
 //        iVosWrapper.setTrustedTimeServerUrl("https://domain.com/vtap/time");
 //        CryptoTA.unloadTA();
 //        iVosWrapper.stopVOS();
-//
+
         setupVguard();
+        setupVguarda();
+        startVos(this);
         encryptDecrypt(this);
         tv.setText(vGuardMgr.getTroubleshootingId());
         encryptBlockDataFile(this);
         encryptBlockData();
         encryptDecExistingFile(this);
-
-
+        getReturnCode();
+        Log.d("rede" , "aa:"+ vGuardMgr.getIsVosStarted());
     }
+
 
 
     private void encryptDecExistingFile(Context context){
@@ -177,15 +179,8 @@ public class MainActivity extends AppCompatActivity implements VGExceptionHandle
     }
 
     private void setupVguard() {
-//        try {
-//            new VGuardFactory().getVGuard(this , new VGuardFactory.Builder()
-//            .setDebugable(false)
-//            .setAllowsArbitraryNetworking(false)
-//            .setMemoryConfiguration(MemoryConfiguration.DEFAULT)
-//            .setVGExceptionHandler(this));
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
+
+
         broadcastRvcr = new VGuardBroadcastReceiver(this){
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -195,8 +190,22 @@ public class MainActivity extends AppCompatActivity implements VGExceptionHandle
                    if (ACTION_SCAN_COMPLETE.equals(intent.getAction())){
                     }
                    if (VOS_READY.equals(intent.getAction())){
-                        Toast.makeText(MainActivity.this , "Done" , Toast.LENGTH_LONG).show();
-                    }
+                       Toast.makeText(MainActivity.this , "Done" , Toast.LENGTH_LONG).show();
+                       long firmwareRetuenCode = getReturnCode();
+                       if (firmwareRetuenCode >= 0 ){
+                           Log.d("redd", "onReceive: ");
+                           if (vGuardMgr == null){
+                               Log.d("redd", "onReceive: o");
+                               try {
+                                   vGuardMgr = VGuardFactory.getInstance();
+                                   hook = new ActivityLifecycleHook(vGuardMgr);
+                                   Log.d("redd", "onReceive: ");
+                               }catch (Exception e){
+                                   Log.d("redd", "onReceive: "+e);
+                               }
+                           }
+                       }
+                   }
             }
         };
 
@@ -206,11 +215,10 @@ public class MainActivity extends AppCompatActivity implements VGExceptionHandle
         localBroadcastManager.registerReceiver(broadcastRvcr , new IntentFilter(ACTION_SCAN_COMPLETE));
         localBroadcastManager.registerReceiver(broadcastRvcr , new IntentFilter(VOS_READY));
         localBroadcastManager.registerReceiver(broadcastRvcr , new IntentFilter(ACTION_FINISH));
-
         try {
             VGuardFactory.debug = true;
             //deprecated
-            vGuardMgr= new VGuardFactory().getVGuard(this);
+            vGuardMgr= new VGuardFactory().getVGuard(this );
             vGuardMgr.setVGExceptionHandler(this);
             hook = new ActivityLifecycleHook(vGuardMgr);
             Log.d("coba" , "jalan");
@@ -218,44 +226,65 @@ public class MainActivity extends AppCompatActivity implements VGExceptionHandle
             e.printStackTrace();
             Log.d("exxx" , "dd" + e);
         }
+
+
+
+    }
+
+    private void setupVguarda() {
+        try {
+            new VGuardFactory().getVGuard(this , new VGuardFactory.Builder()
+            .setDebugable(true)
+            .setAllowsArbitraryNetworking(false)
+            .setMemoryConfiguration(MemoryConfiguration.DEFAULT)
+            .setVGExceptionHandler(this));
+            Log.d("ppp", "setupVguard: sss");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Log.d("ppp", "setupVguard: failed ");
+        }
     }
     //    VKeySecureKeypad.VKSecureKeyboardLayout =
 
 //    private void stopMvos(){
 //        mVos.stop();
 //    }
-
-    private void startVos(Context ctx){
-        mVos = new Vos(ctx);
-        mVos.registerVosWrapperCallback(this);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    InputStream is = ctx.getAssets().open("firmware");
-                    byte[] kernelData = new byte[is.available()];
-                    is.read(kernelData);
-                    is.close();
-                    int vosReturnCode = (int) mVos.start(kernelData ,null , null , null , null);
-                    Log.d("testingg" , "berhasil");
-                    if (vosReturnCode > 0){
-                        //successfully start
-                        VosWrapper vosWrapper = VosWrapper.getInstance(ctx);
-                        String version = vosWrapper.getProcessorVersion();
-                        Log.d("testingg" , "berhasil");
-                    }else {
-                        //failed to start vos , handle error
-                        Log.d("failed", "run: gaal");
+private void startVos(Context ctx){
+ mVos = new Vos(ctx);
+ mVos.registerVosWrapperCallback(this);
+    new Thread(new Runnable() {
+        @Override
+        public void run() {
+            try { InputStream is = ctx.getAssets().open("firmware");
+                byte[] kernelData = new byte[is.available()];
+                is.read(kernelData);
+                is.close();
+                long vosReturnCode = mVos.start(kernelData ,null , null , null , null);
+                Log.d("testingg" , "berhasil");
+                        if (vosReturnCode >= 0){
+                            //successfully start
+                            VosWrapper vosWrapper = VosWrapper.getInstance(ctx);
+                            String version = vosWrapper.getProcessorVersion();
+//                            Log.d("testingg" , "berhasil");
+                        }else {
+                            //failed to start vos , handle error
+                            Log.d("failedd", "run: gaal");
+                        }
+                    } catch (IOException e) {
+                        Log.d("yyy" , "gagal" + e);
                     }
-                } catch (IOException e) {
-                    Log.d("yyy" , "gagal" + e);
                 }
-
-            }
 
         });
     }
 
+    private long getReturnCode(){
+        Intent intent = new Intent();
+        long firmwareReturnCode = intent.getLongExtra(VOS_FIRMWARE_RETURN_CODE_KEY, 0);
+        Log.d("fwcode", "getReturnCode: "+firmwareReturnCode);
+        return firmwareReturnCode;
+    }
 
     @Override
     public boolean onNotified(int i, int i1) {
