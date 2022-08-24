@@ -10,6 +10,7 @@ import vkey.android.vos.Vos;
 import vkey.android.vos.VosWrapper;
 
 
+import com.google.common.eventbus.EventBus;
 import com.vkey.android.vguard.MemoryConfiguration;
 import com.vkey.android.vguard.VGException;
 import com.vkey.securefileio.SecureFileIO;
@@ -35,6 +36,8 @@ import com.vkey.android.vguard.VGuardFactory;
 import com.vkey.android.vguard.VGExceptionHandler;
 import com.vkey.android.vguard.LocalBroadcastManager;
 import com.vkey.android.vguard.VGuardBroadcastReceiver;
+
+import org.json.JSONObject;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -79,13 +82,12 @@ public class MainActivity extends AppCompatActivity  implements VGExceptionHandl
         setupVguard();
         setupVguarda();
         startVos(this);
-        encryptDecrypt(this);
+//        encryptDecrypt(this);
         tv.setText(vGuardMgr.getTroubleshootingId());
-        encryptBlockDataFile(this);
-        encryptBlockData();
-        encryptDecExistingFile(this);
+//        encryptBlockDataFile(this);
+//        encryptBlockData();
+//        encryptDecExistingFile(this);
         getReturnCode();
-        Log.d("rede" , "aa:"+ vGuardMgr.getIsVosStarted());
     }
 
 
@@ -180,13 +182,32 @@ public class MainActivity extends AppCompatActivity  implements VGExceptionHandl
 
     private void setupVguard() {
 
-
         broadcastRvcr = new VGuardBroadcastReceiver(this){
             @Override
             public void onReceive(Context context, Intent intent) {
                 super.onReceive(context, intent);
-                   if (PROFILE_LOADED.equals(intent.getAction())){}
-                   if (VGUARD_STATUS.equals(intent.getAction())){}
+                   if (PROFILE_LOADED.equals(intent.getAction())){
+                       Log.d("rede" , "aa:" + vGuardMgr.getIsVosStarted());
+                       encryptDecrypt(getApplicationContext());
+                   }
+                   if (VGUARD_STATUS.equals(intent.getAction())){
+                       if (intent.hasExtra(Constant.VGUARD_INIT_STATUS)){
+                           boolean initStatus = intent.getBooleanExtra(Constant.VGUARD_INIT_STATUS , false);
+                           String msg = "\n " + VGUARD_STATUS + ":" + initStatus;
+                           Log.d("jason", msg);
+                           if (!initStatus){
+                               try {
+                                   JSONObject jsonObject = new JSONObject(intent.getStringExtra(VGUARD_MESSAGE));
+                                   Log.d("jason", jsonObject.getString("code"));
+                                   Log.d("jason", "Description");
+                                   msg += " " + jsonObject.toString();
+                               }catch (Exception e){
+
+                               }
+                               Log.d("jason", msg);
+                           }
+                       }
+                   }
                    if (ACTION_SCAN_COMPLETE.equals(intent.getAction())){
                     }
                    if (VOS_READY.equals(intent.getAction())){
@@ -221,6 +242,7 @@ public class MainActivity extends AppCompatActivity  implements VGExceptionHandl
             vGuardMgr= new VGuardFactory().getVGuard(this );
             vGuardMgr.setVGExceptionHandler(this);
             hook = new ActivityLifecycleHook(vGuardMgr);
+            Log.d("rede" , "aa:"+ vGuardMgr.getIsVosStarted());
             Log.d("coba" , "jalan");
         } catch (Exception e) {
             e.printStackTrace();
