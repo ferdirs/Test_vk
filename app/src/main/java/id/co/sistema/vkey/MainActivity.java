@@ -11,6 +11,7 @@ import vkey.android.vos.VosWrapper;
 
 
 import com.google.common.eventbus.EventBus;
+import com.vkey.android.internal.vguard.engine.BasicThreatInfo;
 import com.vkey.android.vguard.MemoryConfiguration;
 import com.vkey.android.vguard.VGException;
 import com.vkey.securefileio.SecureFileIO;
@@ -25,6 +26,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Parcelable;
+import android.text.TextUtils;
 import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -45,6 +48,9 @@ import java.nio.file.Files;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 
 public class MainActivity extends AppCompatActivity  implements VGExceptionHandler, VosWrapper.Callback {
 
@@ -54,10 +60,6 @@ public class MainActivity extends AppCompatActivity  implements VGExceptionHandl
     private Vos mVos;
     private TextView tv;
     private taInterface CryptoTA = taInterface.getInstance();
-
-
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,7 +81,10 @@ public class MainActivity extends AppCompatActivity  implements VGExceptionHandl
 //        CryptoTA.unloadTA();
 //        iVosWrapper.stopVOS();
 
+
+        
         setupVguard();
+        
         setupVguarda();
         startVos(this);
         encryptDecrypt(this);
@@ -184,7 +189,18 @@ public class MainActivity extends AppCompatActivity  implements VGExceptionHandl
             @Override
             public void onReceive(Context context, Intent intent) {
                 super.onReceive(context, intent);
-                   if (PROFILE_LOADED.equals(intent.getAction())){
+
+                try {
+                    new VGuardFactory().getVGuard(getApplicationContext(), new VGuardFactory.Builder()
+                            .setDebugable(false)
+                            .setAllowsArbitraryNetworking(false)
+                            .setMemoryConfiguration(MemoryConfiguration.DEFAULT)
+                            .setVGExceptionHandler(handleException()));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                if (PROFILE_LOADED.equals(intent.getAction())){
                        Log.d("redee" , "aa:" + vGuardMgr.getIsVosStarted());
                        encryptDecrypt(getApplicationContext());
                    }
@@ -199,13 +215,54 @@ public class MainActivity extends AppCompatActivity  implements VGExceptionHandl
                                    Log.d("jason", jsonObject.getString("code"));
                                    Log.d("jason", "Description");
                                    msg += " " + jsonObject.toString();
-                               }catch (Exception e){
+                               }catch (Exception e) {
 
                                }
                            }
                        }
+
+                       if (intent.hasExtra(VGUARD_HANDLE_THREAT_POLICY)) {
+                           ArrayList<Parcelable> detectedThreats =
+                                   (ArrayList<Parcelable>)
+                                           intent.getParcelableArrayListExtra(VGuardBroadcastReceiver.SCAN_COMPLETE_RESULT);
+                           StringBuilder builder = new StringBuilder();
+                           for (Parcelable info : detectedThreats) {
+                               String infoStr = ((BasicThreatInfo) info).toString();
+                               builder.append(infoStr).append("\n");
+                           }
+                           int highestResponse =
+                                   intent.getIntExtra(VGUARD_HIGHEST_THREAT_POLICY, -1);
+                           String alertTitle =
+                                   intent.getStringExtra(VGUARD_ALERT_TITLE);
+                           String alertMsg =
+                                   intent.getStringExtra(VGUARD_ALERT_MESSAGE);
+                           long disabledAppExpired =
+                                   intent.getLongExtra(VGUARD_DISABLED_APP_EXPIRED, 0);
+                           if (highestResponse > 0) {
+                               builder.append("highest policy: " +
+                                       highestResponse).append("\n");
+                           }
+                           if (!TextUtils.isEmpty(alertTitle)) {
+                               builder.append("alertTitle: " + alertTitle).append("\n");
+                           }
+                           if (!TextUtils.isEmpty(alertMsg)) {
+                               builder.append("alertMsg: " + alertMsg).append("\n");
+                           }
+                           if (disabledAppExpired > 0) {
+                               SimpleDateFormat format = new SimpleDateFormat("yyyy-MMdd HH:mm:ss");
+                               String activeDate = format.format(new
+                                       Date(disabledAppExpired));
+                               builder.append("App can use again after: " +
+                                       activeDate).append("\n");
+                           }
+                       }
                    }
                    if (ACTION_SCAN_COMPLETE.equals(intent.getAction())){
+                       ArrayList<Parcelable> detectedThread = (ArrayList<Parcelable>)
+                               intent.getParcelableArrayListExtra(SCAN_COMPLETE_RESULT);
+                       for (Parcelable info : detectedThread){
+                           String infoStr = ((BasicThreatInfo)info).toString();
+                       }
                     }
                    if (VOS_READY.equals(intent.getAction())){
                        Toast.makeText(MainActivity.this , "Done" , Toast.LENGTH_LONG).show();
@@ -227,6 +284,8 @@ public class MainActivity extends AppCompatActivity  implements VGExceptionHandl
             }
         };
 
+       
+
         LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
         localBroadcastManager.registerReceiver(broadcastRvcr , new IntentFilter(PROFILE_LOADED));
         localBroadcastManager.registerReceiver(broadcastRvcr , new IntentFilter(VGUARD_STATUS));
@@ -247,6 +306,10 @@ public class MainActivity extends AppCompatActivity  implements VGExceptionHandl
 
 
 
+    }
+
+    private VGExceptionHandler handleException() {
+        return null;
     }
 
     private void setupVguarda() {
@@ -271,30 +334,26 @@ public class MainActivity extends AppCompatActivity  implements VGExceptionHandl
 private void startVos(Context ctx){
  mVos = new Vos(ctx);
  mVos.registerVosWrapperCallback(this);
-    new Thread(new Runnable() {
-        @Override
-        public void run() {
-            try { InputStream is = ctx.getAssets().open("firmware");
-                byte[] kernelData = new byte[is.available()];
-                is.read(kernelData);
-                is.close();
-                long vosReturnCode = mVos.start(kernelData ,null , null , null , null);
-                Log.d("testingg" , "berhasil");
-                        if (vosReturnCode >= 0){
-                            //successfully start
-                            VosWrapper vosWrapper = VosWrapper.getInstance(ctx);
-                            String version = vosWrapper.getProcessorVersion();
-                            Log.d("testingg" , "berhasil");
-                        }else {
-                            //failed to start vos , handle error
-                            Log.d("failedd", "run: gaal");
-                        }
-                    } catch (IOException e) {
-                        Log.d("yyy" , "gagal" + e);
+    new Thread(() -> {
+        try { InputStream is = ctx.getAssets().open("firmware");
+            byte[] kernelData = new byte[is.available()];
+            is.read(kernelData);
+            is.close();
+            long vosReturnCode = mVos.start(kernelData ,null , null , null , null);
+            Log.d("testingg" , "berhasil");
+                    if (vosReturnCode >= 0){
+                        //successfully start
+                        VosWrapper vosWrapper = VosWrapper.getInstance(ctx);
+                        String version = vosWrapper.getProcessorVersion();
+                        Log.d("testingg" , "berhasil");
+                    }else {
+                        //failed to start vos , handle error
+                        Log.d("failedd", "run: gaal");
                     }
+                } catch (IOException e) {
+                    Log.d("yyy" , "gagal" + e);
                 }
-
-        });
+            });
     }
 
     private long getReturnCode(){
