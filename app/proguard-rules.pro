@@ -24,7 +24,20 @@
 -keep class com.vkey.** { *; }
 -keep interface vkey.** { *; }
 -keep interface com.vkey.** { *; }
-
-#Relinker (for Realm 0.88.0+)
--keep class com.getkeepsafe.** { *; }
--keep class com.github.KeepSafe.** { *; }
+-keep class androidx.core.app.VKJobIntentService { *; }
+-keep class androidx.core.app.JobIntentService { *; }
+# For org.apache.http
+-keep class org.apache.http.** { *; }
+-dontwarn org.apache.http.**
+# For io.jsonwebtoken
+-keepattributes InnerClasses
+-keep class io.jsonwebtoken.** { *; }
+-keepnames class io.jsonwebtoken.* { *; }
+-keepnames interface io.jsonwebtoken.* { *; }
+-keep class org.bouncycastle.** { *; }
+-keepnames class org.bouncycastle.** { *; }
+-dontwarn org.bouncycastle.**
+# For cuckoofilter4j
+-keep class com.github.mgunlogson.cuckoofilter4j.** { *; }
+-keepnames class com.github.mgunlogson.cuckoofilter4j.* { *; }
+-keepnames interface com.github.mgunlogson.cuckoofilter4j.* { *; }

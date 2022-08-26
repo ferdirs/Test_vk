@@ -82,11 +82,11 @@ public class MainActivity extends AppCompatActivity  implements VGExceptionHandl
         setupVguard();
         setupVguarda();
         startVos(this);
-//        encryptDecrypt(this);
+        encryptDecrypt(this);
         tv.setText(vGuardMgr.getTroubleshootingId());
-//        encryptBlockDataFile(this);
-//        encryptBlockData();
-//        encryptDecExistingFile(this);
+        encryptBlockDataFile(this);
+        encryptBlockData();
+        encryptDecExistingFile(this);
         getReturnCode();
     }
 
@@ -138,16 +138,14 @@ public class MainActivity extends AppCompatActivity  implements VGExceptionHandl
         String test = "sasdasdasd 837483743 asdasda@.comsd";
         String encryptFile = context.getFilesDir().getAbsolutePath() + "encryptedFile.txt";
 //        if(!encryptFile.exists()) encryptFile.createNewFile();
-
         try {
-            com.vkey.securefileio.SecureFileIO.encryptString(test ,encryptFile, "P@ssw0rd" , false);
-            String decrypt = com.vkey.securefileio.SecureFileIO.decryptString(encryptFile , "P@ssw0rd");
+            SecureFileIO.encryptString(test ,encryptFile, "P@ssw0rd" , false);
+            String decrypt = SecureFileIO.decryptString(encryptFile , "P@ssw0rd");
             Log.d("TESTT", "encryptDecrypt: "+decrypt);
         } catch (IOException e) {
             e.printStackTrace();
             Log.d("TESTT", "encryptDecrypt: "+e);
         }
-
     }
 
     @Override
@@ -187,7 +185,7 @@ public class MainActivity extends AppCompatActivity  implements VGExceptionHandl
             public void onReceive(Context context, Intent intent) {
                 super.onReceive(context, intent);
                    if (PROFILE_LOADED.equals(intent.getAction())){
-                       Log.d("rede" , "aa:" + vGuardMgr.getIsVosStarted());
+                       Log.d("redee" , "aa:" + vGuardMgr.getIsVosStarted());
                        encryptDecrypt(getApplicationContext());
                    }
                    if (VGUARD_STATUS.equals(intent.getAction())){
@@ -204,7 +202,6 @@ public class MainActivity extends AppCompatActivity  implements VGExceptionHandl
                                }catch (Exception e){
 
                                }
-                               Log.d("jason", msg);
                            }
                        }
                    }
@@ -242,7 +239,6 @@ public class MainActivity extends AppCompatActivity  implements VGExceptionHandl
             vGuardMgr= new VGuardFactory().getVGuard(this );
             vGuardMgr.setVGExceptionHandler(this);
             hook = new ActivityLifecycleHook(vGuardMgr);
-            Log.d("rede" , "aa:"+ vGuardMgr.getIsVosStarted());
             Log.d("coba" , "jalan");
         } catch (Exception e) {
             e.printStackTrace();
@@ -288,7 +284,7 @@ private void startVos(Context ctx){
                             //successfully start
                             VosWrapper vosWrapper = VosWrapper.getInstance(ctx);
                             String version = vosWrapper.getProcessorVersion();
-//                            Log.d("testingg" , "berhasil");
+                            Log.d("testingg" , "berhasil");
                         }else {
                             //failed to start vos , handle error
                             Log.d("failedd", "run: gaal");
