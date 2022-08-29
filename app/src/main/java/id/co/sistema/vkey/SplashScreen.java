@@ -66,6 +66,8 @@ public class SplashScreen extends AppCompatActivity implements VGExceptionHandle
         },5000L);
     }
 
+
+
     private void startVos(Context ctx){
         mVos = new Vos(ctx);
         mVos.registerVosWrapperCallback((VosWrapper.Callback) getApplicationContext());
